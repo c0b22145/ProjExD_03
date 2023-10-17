@@ -154,7 +154,7 @@ class Score:
         self.color = (0, 0, 255)
         self.score = 0
         #テキストの設定
-        self.img = self.font.render("スコア:" + str(self.score), 0, self.color)
+        self.img = self.font.render(f"スコア:0", 0, self.color)
         self.rct = self.img.get_rect()
         self.rct.center = (300, HEIGHT - 350)
 
@@ -163,7 +163,7 @@ class Score:
         スコアの更新と画面への描画
         引数 screen:画面Surface
         """
-        self.img = self.font.render("スコア:" + str(self.score), 0, self.color)
+        self.img = self.font.render(f"スコア:{self.score}", 0, self.color)
         screen.blit(self.img, self.rct)
 
 def main():
