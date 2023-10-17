@@ -41,16 +41,16 @@ class Bird:
         引数2 xy：こうかとん画像の位置座標タプル
         """
         img0 = pg.transform.rotozoom(pg.image.load(f"ex03/fig/{num}.png"), 0, 2.0)
-        img = pg.transform.flip(img0, True, False) #デフォルトのこうかとん（右向き）
-        self.imgs = { #0度から反時計回りに定義
-            (+5, 0): img, #右
-            (+5, -5): pg.transform.rotozoom(img, 45, 1.0), #右上
-            (0, -5): pg.transform.rotozoom(img, 90, 1.0), #上
-            (-5, -5): pg.transform.rotozoom(img, -45, 1.0), #左上
-            (-5, 0): img0, #左
-            (-5, +5): pg.transform.rotozoom(img, 45, 1.0), #左下
-            (0, +5): pg.transform.rotozoom(img, -90, 1.0), #した
-            (+5, +5): pg.transform.rotozoom(img, -45, 1.0), #右下
+        img = pg.transform.flip(img0, True, False)  # デフォルトのこうかとん（右向き）
+        self.imgs = {  # 0度から反時計回りに定義
+            (+5, 0): img,  # 右
+            (+5, -5): pg.transform.rotozoom(img, 45, 1.0),  # 右上
+            (0, -5): pg.transform.rotozoom(img, 90, 1.0),  # 上
+            (-5, -5): pg.transform.rotozoom(img0, -45, 1.0),  # 左上
+            (-5, 0): img0,  # 左
+            (-5, +5): pg.transform.rotozoom(img0, 45, 1.0),  # 左下
+            (0, +5): pg.transform.rotozoom(img, -90, 1.0),  # 下
+            (+5, +5): pg.transform.rotozoom(img, -45, 1.0),  # 右下
         }
         self.img = self.imgs[(+5, 0)]
         self.rct = self.img.get_rect()
@@ -90,9 +90,9 @@ class Beam:
         beam画像Surfaceを生成する
         引数 bird:surface画面
         """
-        self.img = pg.image.load(f"ex03/fig/beam.png")
+        self.img = pg.transform.rotozoom(pg.image.load(f"ex03/fig/beam.png"),0, 2.0)
         self.rct = self.img.get_rect()
-        self.rct.left =self.rct.right #こうかとんの右横座標
+        self.rct.left =bird.rct.right #こうかとんの右横座標
         self.rct.centery = bird.rct.centery #こうかとんの中心縦座標
         self.vx, self.vy = +5, 0
 
@@ -130,7 +130,7 @@ class Bomb:
     def update(self, screen: pg.Surface):
         """
         爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
-        引数 screen：画面Surface
+        引数 screen:画面Surface
         """
         yoko, tate = check_bound(self.rct)
         if not yoko:
@@ -141,6 +141,31 @@ class Bomb:
         screen.blit(self.img, self.rct)
 
 
+class Score:
+    """
+    スコアに関するクラス
+    """
+    def __init__(self):
+        """
+        スコアの初期化
+        """
+        # フォントの用意
+        self.font = pg.font.SysFont("hgp創英角ﾎﾟｯﾌﾟ体",30)
+        self.color = (0, 0, 255)
+        self.score = 0
+        #テキストの設定
+        self.img = self.font.render("スコア:" + str(self.score), 0, self.color)
+        self.rct = self.img.get_rect()
+        self.rct.center = (300, HEIGHT - 350)
+
+    def update(self, screen: pg.Surface):
+        """
+        スコアの更新と画面への描画
+        引数 screen:画面Surface
+        """
+        self.img = self.font.render("スコア:" + str(self.score), 0, self.color)
+        screen.blit(self.img, self.rct)
+
 def main():
     pg.display.set_caption("たたかえ！こうかとん")
     screen = pg.display.set_mode((WIDTH, HEIGHT))    
@@ -148,9 +173,10 @@ def main():
     bird = Bird(3, (900, 400))
     bombs = [Bomb() for _ in range(NUM_OF_BOMBS)]
     beam = None
-
+    score = Score()
     clock = pg.time.Clock()
     tmr = 0
+
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -161,20 +187,23 @@ def main():
         
         screen.blit(bg_img, [0, 0])
         
-        for bomb in bombs:
-            if bird.rct.colliderect(bomb.rct):
+        if beam is not None and bomb is not None:
+            for bomb in bombs:
+                if bird.rct.colliderect(bomb.rct):
                 # ゲームオーバー時に，こうかとん画像を切り替え，1秒間表示させる
-                bird.change_img(8, screen)
-                pg.display.update()
-                time.sleep(1)
-                return
-            if beam in enumerate(bombs) :
+                    bird.change_img(8, screen)
+                    pg.display.update()
+                    time.sleep(1)
+                    return
+            
+            for i, bomb in enumerate(bombs) :
                 if beam is not None:
-                    if beam.rct.colliderect(bomb.rct): #ビームと爆弾の衝突判定
+                    if bomb.rct.colliderect(beam.rct): #ビームと爆弾の衝突判定
                         #撃墜=Noneにする
                         beam = None
                         bombs[i] = None
                         bird.change_img(6, screen)
+                        score.score += 1
                         pg.display.update()
                         bombs = [bomb for bomb in bombs if bomb is not None]
 
@@ -184,6 +213,7 @@ def main():
             bomb.update(screen)
         if beam is not None:
             beam.update(screen)
+        score.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
